@@ -11,12 +11,11 @@
 import glob
 import re
 import subprocess
-import ImageTk
-import Image
 import os
 import sys
 import Pmw
 from tkinter import *
+from PIL import ImageTk, Image
 from math import *
 oneline = "View and manipulate images"
 

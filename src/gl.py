@@ -10,7 +10,7 @@
 
 from math import sin, cos, sqrt, pi, acos
 from vizinfo import vizinfo
-import Image
+from PIL import Image
 from OpenGL.GLUT import *
 from OpenGL.Tk import *
 oneline = "3d interactive visualization via OpenGL"

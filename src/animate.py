@@ -13,7 +13,7 @@ import re
 import subprocess
 import os
 import sys
-from ImageTk import PhotoImage
+from PIL.ImageTk import PhotoImage
 from tkinter import *
 oneline = "Animate a series of image files"
 
