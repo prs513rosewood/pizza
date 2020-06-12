@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S python3 -i
 
 # Pizza.py toolkit, www.cs.sandia.gov/~sjplimp/pizza.html
 # Steve Plimpton, sjplimp@sandia.gov, Sandia National Laboratories
