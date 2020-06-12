@@ -23,6 +23,7 @@ import string
 import os
 import subprocess
 import sys
+import importlib
 from time import clock
 version = "9 Oct 2015"
 
@@ -85,6 +86,12 @@ except Exception as exception:
     pass
 
 # -------------------------------------------------------------------------
+# Imported pizza modules and help strings
+imported_tools = {}
+imported_onelines = {}
+imported_docstrs = {}
+
+# -------------------------------------------------------------------------
 # error trap that enables special commands at interactive prompt
 
 
@@ -93,7 +100,7 @@ def trap(type, value, tback):
 
     # only check SyntaxErrors
 
-    if not isinstance(value, exceptions.SyntaxError):
+    if not isinstance(value, SyntaxError):
         sys.__excepthook__(type, value, tback)
         return
 
@@ -121,7 +128,7 @@ def trap(type, value, tback):
 
         elif len(words) == 1 and words[0] == "??":
             for tool in tools:
-                exec("oneline = oneline_%s" % tool)
+                oneline = imported_onelines[tool]
                 print("%-11s%s" % (tool, oneline))
             print()
 
@@ -169,10 +176,10 @@ def trap(type, value, tback):
 
             else:
                 if words[1] in tools:
-                    exec("txt = docstr_%s" % words[1])
+                    txt = imported_docstrs[words[1]]
                     txt = re.sub("\n\s*\n", "\n", txt)
                     txt = re.sub("\n .*", "", txt)
-                    exec("print oneline_%s" % words[1])
+                    print(imported_onelines[words[1]])
                     print(txt)
                 else:
                     print("%s is not a recognized tool" % words[1])
@@ -198,8 +205,8 @@ def trap(type, value, tback):
 
             else:
                 if words[1] in tools:
-                    exec("print oneline_%s" % words[1])
-                    exec("print docstr_%s" % words[1])
+                    print("{}\n{}".format(imported_onelines[words[1]],
+                                          imported_docstrs[words[1]]))
                 else:
                     print("%s is not a recognized class" % words[1])
 
@@ -389,14 +396,16 @@ sys.path = PIZZA_TOOLS + sys.path
 
 failed = []
 for tool in tools:
-    # print "loading tool '%s'"%tool
     if nodisplay and tool in ['gl']:
         failed.append(tool)
         continue
     try:
-        exec("from %s import %s" % (tool, tool))
-        exec("from %s import oneline as oneline_%s" % (tool, tool))
-        exec("from %s import docstr as docstr_%s" % (tool, tool))
+        # Importing tools and docstrings
+        imported_tools[tool] = importlib.import_module(tool)
+        imported_onelines[tool] = imported_tools[tool].oneline
+        imported_docstrs[tool] = imported_tools[tool].docstr
+        # Putting "tool.tool" into global namespace
+        globals()[tool] = getattr(imported_tools[tool], tool)
     except Exception as exception:
         print("%s tool did not load:" % tool)
         print(" ", exception)
