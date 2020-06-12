@@ -133,8 +133,8 @@ def trap(type, value, tback):
             print()
 
             scripts = []
-            for dir in PIZZA_SCRIPTS[1:]:
-                list = glob.glob("%s/*.py" % dir)
+            for directory in PIZZA_SCRIPTS[1:]:
+                list = glob.glob("%s/*.py" % directory)
                 list.sort()
                 scripts += list
             for script in scripts:
@@ -154,8 +154,8 @@ def trap(type, value, tback):
         elif len(words) == 2 and words[0] == "?":
             if words[1][-3:] == ".py":
                 fileflag = 0
-                for dir in PIZZA_SCRIPTS:
-                    filename = "%s/%s" % (dir, words[1])
+                for directory in PIZZA_SCRIPTS:
+                    filename = "%s/%s" % (directory, words[1])
                     if os.path.isfile(filename):
                         fileflag = 1
                         lineflag = 0
@@ -187,8 +187,8 @@ def trap(type, value, tback):
         elif len(words) == 2 and words[0] == "??":
             if words[1][-3:] == ".py":
                 fileflag = 0
-                for dir in PIZZA_SCRIPTS:
-                    filename = "%s/%s" % (dir, words[1])
+                for directory in PIZZA_SCRIPTS:
+                    filename = "%s/%s" % (directory, words[1])
                     if os.path.isfile(filename):
                         fileflag = 1
                         lines = open(filename, 'r').readlines()
@@ -243,8 +243,8 @@ def trap(type, value, tback):
             argv = words[1:]
             file = argv[0]
             flag = 0
-            for dir in PIZZA_SCRIPTS:
-                fullfile = dir + '/' + file
+            for directory in PIZZA_SCRIPTS:
+                fullfile = directory + '/' + file
                 if os.path.exists(fullfile):
                     flag = 1
                     print("Executing file:", fullfile)
@@ -343,7 +343,7 @@ if len(yes_tools) > 0 and len(no_tools) > 0:
 # tools = list of tool names to import
 # if -t switch was used, tools = just those files
 # else scan for *.py files in all dirs in PIZZA_TOOLS list
-#   and then Pizza.py src dir (sys.path[0])
+#   and then Pizza.py src directory (sys.path[0])
 
 if not silent:
     print("Loading tools ...")
@@ -361,8 +361,8 @@ if len(yes_tools) > 0:
     tools = yes_tools
 else:
     tools = []
-    for dir in PIZZA_TOOLS:
-        tools += glob.glob(dir + "/*.py")
+    for directory in PIZZA_TOOLS:
+        tools += glob.glob(directory + "/*.py")
     for i in range(len(tools)):
         tools[i] = os.path.basename(tools[i])
         tools[i] = tools[i][:-3]
@@ -411,7 +411,7 @@ for tool in tools:
         print(" ", exception)
         failed.append(tool)
 
-for dir in PIZZA_TOOLS:
+for _ in PIZZA_TOOLS:
     sys.path = sys.path[1:]
 
 # final list of tools: remove tools where import failed, sort them
@@ -420,7 +420,7 @@ for tool in failed:
     tools.remove(tool)
 tools.sort()
 
-# add current working dir to sys.path so user can import own modules
+# add current working directory to sys.path so user can import own modules
 # cwd isn't in sys.path when Pizza.py is launched
 
 sys.path.insert(0, '')
@@ -448,8 +448,8 @@ for task in tasks:
         file = argv[0]
         try:
             flag = 0
-            for dir in PIZZA_SCRIPTS:
-                fullfile = dir + '/' + file
+            for directory in PIZZA_SCRIPTS:
+                fullfile = directory + '/' + file
                 if os.path.exists(fullfile):
                     print("Executing file:", fullfile)
                     exec(compile(open(fullfile, "rb").read(), fullfile, 'exec'))
