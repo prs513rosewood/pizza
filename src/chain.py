@@ -82,7 +82,7 @@ class chain:
         self.bonds = []
 
         volume = n/rhostar
-        prd = pow(volume/xaspect/yaspect/zaspect, 1.0/3.0)
+        prd = math.pow(volume/xaspect/yaspect/zaspect, 1./3.)
         self.xprd = xaspect * prd
         self.xlo = -self.xprd/2.0
         self.xhi = self.xprd/2.0
@@ -145,7 +145,7 @@ class chain:
                     idmol = imonomer + 1
                 elif self.id == "end2":
                     idmol = imonomer + 1
-                    if idmol > nper/2:
+                    if idmol > nper // 2:
                         idmol = nper - imonomer
                 else:
                     raise Exception("chain ID is not a valid value")
@@ -232,7 +232,7 @@ class chain:
     # --------------------------------------------------------------------
 
     def random(self):
-        k = self.seed/IQ
+        k = self.seed // IQ
         self.seed = IA*(self.seed-k*IQ) - IR*k
         if self.seed < 0:
             self.seed += IM
