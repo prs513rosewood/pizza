@@ -3,7 +3,7 @@
 #
 # Copyright (2005) Sandia Corporation.  Under the terms of Contract
 # DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
-# certain rights in this software.  This software is distributed under 
+# certain rights in this software.  This software is distributed under
 # the GNU General Public License.
 
 # --------------
@@ -58,7 +58,7 @@ PIZZA_EXCLUDE = ["pizza", "DEFAULTS", "vizinfo"]
 
 #PIZZA_GNUPLOT = "gnuplot"
 #PIZZA_GNUTERM = "x11"
-#PIZZA_GNUTERM = "aqua"                   # for Macs with Aquaterm installed
+# PIZZA_GNUTERM = "aqua"                   # for Macs with Aquaterm installed
 
 # --------------
 
@@ -95,12 +95,12 @@ PIZZA_EXCLUDE = ["pizza", "DEFAULTS", "vizinfo"]
 # VMD = the VMD visualization package
 # tools that use it: vmd
 
-#PIZZA_VMDNAME = "vmd"                 # good settings for a Linux box
+# PIZZA_VMDNAME = "vmd"                 # good settings for a Linux box
 #PIZZA_VMDDIR = "/usr/local/lib/vmd"
 #PIZZA_VMDDEV = "win"
 #PIZZA_VMDARCH = "LINUX"
 
-#PIZZA_VMDNAME = "vmd"                 # good settings for a Mac
+# PIZZA_VMDNAME = "vmd"                 # good settings for a Mac
 #PIZZA_VMDDIR = "/Applications/VMD\ 1.8.7.app/Contents/vmd"
 #PIZZA_VMDDEV = "win"
 #PIZZA_VMDARCH = "MACOSXX86"
