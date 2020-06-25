@@ -9,7 +9,7 @@
 # gl tool
 
 from math import sin, cos, sqrt, pi, acos
-from vizinfo import vizinfo
+from .vizinfo import vizinfo
 from PIL import Image
 from OpenGL.GLUT import *
 from OpenGL.Tk import *
@@ -77,7 +77,7 @@ g.ldef()  			   default = 0 fill
   by default 100 types are assigned
   if atom/bond/tri/line has type > # defined properties, is an error
   
-from vizinfo import colors         access color list
+from .vizinfo import colors        access color list
 print colors                       list defined color names and RGB values
 colors["nickname"] = [R,G,B]       set new RGB values from 0 to 255
 
@@ -207,7 +207,7 @@ class gl:
     # --------------------------------------------------------------------
 
     def bg(self, color):
-        from vizinfo import colors
+        from .vizinfo import colors
         self.bgcol = [colors[color][0]/255.0, colors[color][1]/255.0,
                       colors[color][2]/255.0]
         self.w.tkRedraw()
@@ -519,7 +519,7 @@ class gl:
     def box(self, *args):
         self.boxflag = args[0]
         if len(args) > 1:
-            from vizinfo import colors
+            from .vizinfo import colors
             self.bxcol = [colors[args[1]][0]/255.0, colors[args[1]][1]/255.0,
                           colors[args[1]][2]/255.0]
         if len(args) > 2:

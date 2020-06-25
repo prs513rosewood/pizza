@@ -6,7 +6,7 @@
 # certain rights in this software.  This software is distributed under
 # the GNU General Public License.
 
-# bdump tool
+# ldump tool
 
 import types
 import glob
@@ -14,18 +14,18 @@ import re
 import subprocess
 import sys
 from os import popen
-oneline = "Read dump files with bond info"
+oneline = "Read dump files with line segment info"
 
 docstr = """
-b = bdump("dump.one")             read in one or more dump files
-b = bdump("dump.1 dump.2.gz")	  can be gzipped
-b = bdump("dump.*")		  wildcard expands to multiple files
-b = bdump("dump.*",0)		  two args = store filenames, but don't read
+l = ldump("dump.one")             read in one or more dump files
+l = ldump("dump.1 dump.2.gz")	  can be gzipped
+l = ldump("dump.*")		  wildcard expands to multiple files
+l = ldump("dump.*",0)		  two args = store filenames, but don't read
 
   incomplete and duplicate snapshots are deleted
   no column name assignment is performed
 
-time = b.next()             	  read next snapshot from dump files
+time = l.next()             	  read next snapshot from dump files
 
   used with 2-argument constructor to allow reading snapshots one-at-a-time
   snapshot will be skipped only if another snapshot has same time stamp
@@ -33,20 +33,26 @@ time = b.next()             	  read next snapshot from dump files
   return -1 if no snapshots left or last snapshot is incomplete
   no column name assignment is performed
 
-b.map(1,"id",3,"x")               assign names to atom columns (1-N)
+l.map(1,"id",3,"x")               assign names to atom columns (1-N)
 
-  must assign id,type,atom1,atom2
+  must assign id,type,end1x,end1y,end2x,end2y
 
-time,box,atoms,bonds,tris,lines = b.viz(index)   return list of viz objects
+time,box,atoms,bonds,tris,lines = l.viz(index)   return list of viz objects
 
   viz() returns line info for specified timestep index
     can also call as viz(time,1) and will find index of preceding snapshot
     time = timestep value
-    box = NULL
+    box = \[xlo,ylo,zlo,xhi,yhi,zhi\]
     atoms = NULL
-    bonds = id,type,atom1,atom2 for each line as 2d array
+    bonds = NULL
     tris = NULL
-    lines = NULL
+    lines = id,type,x1,y1,z1,x2,y2,z2 for each line as 2d array
+      id,type are from associated atom
+
+l.owrap(...)		          wrap lines to same image as their atoms
+
+  owrap() is called by dump tool's owrap()
+  useful for wrapping all molecule's atoms/lines the same so it is contiguous
 """
 
 # History
@@ -64,6 +70,7 @@ time,box,atoms,bonds,tris,lines = b.viz(index)   return list of viz objects
 #   Snap = one snapshot
 #     time = time stamp
 #     natoms = # of atoms
+#     xlo,xhi,ylo,yhi,zlo,zhi = box bounds (float)
 #     atoms[i][j] = 2d array of floats, i = 0 to natoms-1, j = 0 to ncols-1
 
 # Imports and external programs
@@ -77,14 +84,14 @@ except:
     oldnumeric = True
 
 try:
-    from DEFAULTS import PIZZA_GUNZIP
+    from .DEFAULTS import PIZZA_GUNZIP
 except:
     PIZZA_GUNZIP = "gunzip"
 
 # Class definition
 
 
-class bdump:
+class ldump:
 
     # --------------------------------------------------------------------
 
@@ -100,7 +107,7 @@ class bdump:
         for word in words:
             self.flist += glob.glob(word)
         if len(self.flist) == 0 and len(list) == 1:
-            raise Exception("no bdump file specified")
+            raise Exception("no ldump file specified")
 
         if len(list) == 1:
             self.increment = 0
@@ -180,8 +187,6 @@ class bdump:
     # --------------------------------------------------------------------
     # read a single snapshot from file f
     # return snapshot or 0 if failed
-    # assign column names if not already done and file is self-describing
-    # convert xs,xu to x
 
     def read_snapshot(self, f):
         try:
@@ -190,12 +195,16 @@ class bdump:
             snap.time = int(f.readline().split()[0])    # just grab 1st field
             item = f.readline()
             snap.natoms = int(f.readline())
-            item = f.readline()
 
-            f.readline()    # read past BOX BOUNDS
-            f.readline()
-            f.readline()
-            f.readline()
+            item = f.readline()
+            words = f.readline().split()
+            snap.xlo, snap.xhi = float(words[0]), float(words[1])
+            words = f.readline().split()
+            snap.ylo, snap.yhi = float(words[0]), float(words[1])
+            words = f.readline().split()
+            snap.zlo, snap.zhi = float(words[0]), float(words[1])
+
+            item = f.readline()
 
             if snap.natoms:
                 words = f.readline().split()
@@ -225,7 +234,7 @@ class bdump:
 
     def map(self, *pairs):
         if len(pairs) % 2 != 0:
-            raise Exception("bdump map() requires pairs of mappings")
+            raise Exception("ldump map() requires pairs of mappings")
         for i in range(0, len(pairs), 2):
             j = i + 1
             self.names[pairs[j]] = pairs[i]-1
@@ -253,6 +262,14 @@ class bdump:
             return 0
 
     # --------------------------------------------------------------------
+
+    def findtime(self, n):
+        for i in range(self.nsnaps):
+            if self.snaps[i].time == n:
+                return i
+        raise Exception("no step %d exists" % n)
+
+    # --------------------------------------------------------------------
     # delete successive snapshots with duplicate time stamp
 
     def cull(self):
@@ -264,7 +281,7 @@ class bdump:
                 i += 1
 
     # --------------------------------------------------------------------
-    # return list of bonds to viz for snapshot isnap
+    # return list of lines to viz for snapshot isnap
     # if called with flag, then index is timestep, so convert to snapshot index
 
     def viz(self, index, flag=0):
@@ -282,21 +299,59 @@ class bdump:
         snap = self.snaps[isnap]
 
         time = snap.time
+        box = [snap.xlo, snap.ylo, snap.zlo, snap.xhi, snap.yhi, snap.zhi]
         id = self.names["id"]
         type = self.names["type"]
-        atom1 = self.names["atom1"]
-        atom2 = self.names["atom2"]
+        end1x = self.names["end1x"]
+        end1y = self.names["end1y"]
+        end2x = self.names["end2x"]
+        end2y = self.names["end2y"]
 
-        # create line list from id,type,atom1,atom2
-        # abs() of type since could be negative
+        # create line list from id,type,end1x,end1y,end2x,end2y
+        # don't add line if all 4 values are 0 since not a line
 
-        bonds = []
+        lines = []
         for i in range(snap.natoms):
             atom = snap.atoms[i]
-            bonds.append([int(atom[id]), abs(int(atom[type])),
-                          int(atom[atom1]), int(atom[atom2])])
+            e1x = atom[end1x]
+            e1y = atom[end1y]
+            e2x = atom[end2x]
+            e2y = atom[end2y]
+            if e1x == 0.0 and e1y == 0.0 and e2x == 0.0 and e2y == 0.0:
+                continue
+            lines.append([atom[id], atom[type], e1x, e1y, 0.0, e2x, e2y, 0.0])
 
-        return time, None, None, bonds, None, None
+        return time, box, None, None, None, lines
+
+    # --------------------------------------------------------------------
+    # wrap line end points associated with atoms thru periodic boundaries
+    # invoked by dump() when it does an owrap() on its atoms
+
+    def owrap(self, time, xprd, yprd, zprd, idsdump, atomsdump, iother, ix, iy, iz):
+        id = self.names["id"]
+        end1x = self.names["end1x"]
+        end1y = self.names["end1y"]
+        end2x = self.names["end2x"]
+        end2y = self.names["end2y"]
+
+        isnap = self.findtime(time)
+        snap = self.snaps[isnap]
+        atoms = snap.atoms
+
+        # idump = index of my line I in dump's atoms
+        # jdump = atom J in dump's atoms that atom I was owrapped on
+        # delx,dely = offset applied to atom I and thus to line I
+
+        for i in range(snap.natoms):
+            tag = atoms[i][id]
+            idump = idsdump[tag]
+            jdump = idsdump[atomsdump[idump][iother]]
+            delx = (atomsdump[idump][ix]-atomsdump[jdump][ix])*xprd
+            dely = (atomsdump[idump][iy]-atomsdump[jdump][iy])*yprd
+            atoms[i][end1x] += delx
+            atoms[i][end1y] += dely
+            atoms[i][end2x] += delx
+            atoms[i][end2y] += dely
 
 # --------------------------------------------------------------------
 # one snapshot

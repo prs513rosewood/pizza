@@ -47,19 +47,19 @@ v.debug([True|False])	       display generated VMD script commands?
 
 
 try:
-    from DEFAULTS import PIZZA_VMDNAME
+    from .DEFAULTS import PIZZA_VMDNAME
 except:
     PIZZA_VMDNAME = "vmd"
 try:
-    from DEFAULTS import PIZZA_VMDDIR
+    from .DEFAULTS import PIZZA_VMDDIR
 except:
     PIZZA_VMDDIR = "/usr/local/lib/vmd"
 try:
-    from DEFAULTS import PIZZA_VMDDEV
+    from .DEFAULTS import PIZZA_VMDDEV
 except:
     PIZZA_VMDDEV = "win"
 try:
-    from DEFAULTS import PIZZA_VMDARCH
+    from .DEFAULTS import PIZZA_VMDARCH
 except:
     PIZZA_VMDARCH = "LINUX"
 

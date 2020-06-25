@@ -201,7 +201,7 @@ except:
     oldnumeric = True
 
 try:
-    from DEFAULTS import PIZZA_GUNZIP
+    from .DEFAULTS import PIZZA_GUNZIP
 except:
     PIZZA_GUNZIP = "gunzip"
 

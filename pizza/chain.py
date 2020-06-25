@@ -8,7 +8,7 @@
 
 # chain tool
 
-from data import data
+from .data import data
 import math
 oneline = "Create bead-spring chains for LAMMPS input"
 

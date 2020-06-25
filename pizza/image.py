@@ -60,11 +60,11 @@ i.montage("-geometry 512x512","i*.png","new.png")       1st arg is switch
 
 
 try:
-    from DEFAULTS import PIZZA_CONVERT
+    from .DEFAULTS import PIZZA_CONVERT
 except:
     PIZZA_CONVERT = "convert"
 try:
-    from DEFAULTS import PIZZA_MONTAGE
+    from .DEFAULTS import PIZZA_MONTAGE
 except:
     PIZZA_MONTAGE = "montage"
 

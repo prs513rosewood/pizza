@@ -9,7 +9,7 @@
 # patch tool
 
 from math import pi, sqrt, cos, sin
-from data import data
+from .data import data
 oneline = "Create patchy or rigid particles for LAMMPS input"
 
 docstr = """

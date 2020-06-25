@@ -118,7 +118,7 @@ time,box,atoms,bonds,tris,lines = s.viz(index)   return list of viz objects
 
 
 try:
-    from DEFAULTS import PIZZA_GUNZIP
+    from .DEFAULTS import PIZZA_GUNZIP
 except:
     PIZZA_GUNZIP = "gunzip"
 

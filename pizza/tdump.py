@@ -6,7 +6,7 @@
 # certain rights in this software.  This software is distributed under
 # the GNU General Public License.
 
-# ldump tool
+# tdump tool
 
 import types
 import glob
@@ -14,18 +14,19 @@ import re
 import subprocess
 import sys
 from os import popen
-oneline = "Read dump files with line segment info"
+from math import sqrt
+oneline = "Read dump files with triangle info"
 
 docstr = """
-l = ldump("dump.one")             read in one or more dump files
-l = ldump("dump.1 dump.2.gz")	  can be gzipped
-l = ldump("dump.*")		  wildcard expands to multiple files
-l = ldump("dump.*",0)		  two args = store filenames, but don't read
+t = tdump("dump.one")             read in one or more dump files
+t = tdump("dump.1 dump.2.gz")	  can be gzipped
+t = tdump("dump.*")		  wildcard expands to multiple files
+t = tdump("dump.*",0)		  two args = store filenames, but don't read
 
   incomplete and duplicate snapshots are deleted
   no column name assignment is performed
 
-time = l.next()             	  read next snapshot from dump files
+time = t.next()             	  read next snapshot from dump files
 
   used with 2-argument constructor to allow reading snapshots one-at-a-time
   snapshot will be skipped only if another snapshot has same time stamp
@@ -33,11 +34,11 @@ time = l.next()             	  read next snapshot from dump files
   return -1 if no snapshots left or last snapshot is incomplete
   no column name assignment is performed
 
-l.map(1,"id",3,"x")               assign names to atom columns (1-N)
+t.map(1,"id",3,"x")               assign names to atom columns (1-N)
 
-  must assign id,type,end1x,end1y,end2x,end2y
+  must assign id,type,corner1x,corner1y,corner1z,corner2x,corner2y,corner2z,corner3x,corner3y,corner3z
 
-time,box,atoms,bonds,tris,lines = l.viz(index)   return list of viz objects
+time,box,atoms,bonds,tris,lines = t.viz(index)   return list of viz objects
 
   viz() returns line info for specified timestep index
     can also call as viz(time,1) and will find index of preceding snapshot
@@ -45,18 +46,18 @@ time,box,atoms,bonds,tris,lines = l.viz(index)   return list of viz objects
     box = \[xlo,ylo,zlo,xhi,yhi,zhi\]
     atoms = NULL
     bonds = NULL
-    tris = NULL
-    lines = id,type,x1,y1,z1,x2,y2,z2 for each line as 2d array
+    tris = id,type,x1,y1,z1,x2,y2,z2,x3,y3,z3 for each tri as 2d array
       id,type are from associated atom
+    lines = NULL
 
-l.owrap(...)		          wrap lines to same image as their atoms
+t.owrap(...)		          wrap tris to same image as their atoms
 
   owrap() is called by dump tool's owrap()
-  useful for wrapping all molecule's atoms/lines the same so it is contiguous
+  useful for wrapping all molecule's atoms/tris the same so it is contiguous
 """
 
 # History
-#   11/10, Steve Plimpton (SNL): original version
+#   4/11, Steve Plimpton (SNL): original version
 
 # Variables
 #   flist = list of dump file names
@@ -84,14 +85,14 @@ except:
     oldnumeric = True
 
 try:
-    from DEFAULTS import PIZZA_GUNZIP
+    from .DEFAULTS import PIZZA_GUNZIP
 except:
     PIZZA_GUNZIP = "gunzip"
 
 # Class definition
 
 
-class ldump:
+class tdump:
 
     # --------------------------------------------------------------------
 
@@ -234,7 +235,7 @@ class ldump:
 
     def map(self, *pairs):
         if len(pairs) % 2 != 0:
-            raise Exception("ldump map() requires pairs of mappings")
+            raise Exception("tdump map() requires pairs of mappings")
         for i in range(0, len(pairs), 2):
             j = i + 1
             self.names[pairs[j]] = pairs[i]-1
@@ -302,37 +303,48 @@ class ldump:
         box = [snap.xlo, snap.ylo, snap.zlo, snap.xhi, snap.yhi, snap.zhi]
         id = self.names["id"]
         type = self.names["type"]
-        end1x = self.names["end1x"]
-        end1y = self.names["end1y"]
-        end2x = self.names["end2x"]
-        end2y = self.names["end2y"]
+        corner1x = self.names["corner1x"]
+        corner1y = self.names["corner1y"]
+        corner1z = self.names["corner1z"]
+        corner2x = self.names["corner2x"]
+        corner2y = self.names["corner2y"]
+        corner2z = self.names["corner2z"]
+        corner3x = self.names["corner3x"]
+        corner3y = self.names["corner3y"]
+        corner3z = self.names["corner3z"]
 
-        # create line list from id,type,end1x,end1y,end2x,end2y
-        # don't add line if all 4 values are 0 since not a line
+        # create trid list from id,type,corner1x,...corner3z
+        # don't add tri if all 4 values are 0 since not a line
 
-        lines = []
+        tris = []
         for i in range(snap.natoms):
             atom = snap.atoms[i]
-            e1x = atom[end1x]
-            e1y = atom[end1y]
-            e2x = atom[end2x]
-            e2y = atom[end2y]
-            if e1x == 0.0 and e1y == 0.0 and e2x == 0.0 and e2y == 0.0:
+            c1 = [atom[corner1x], atom[corner1y], atom[corner1z]]
+            c2 = [atom[corner2x], atom[corner2y], atom[corner2z]]
+            c3 = [atom[corner3x], atom[corner3y], atom[corner3z]]
+            n = normal(c1, c2, c3)
+            if c1[0] == 0.0 and c1[1] == 0.0 and c1[2] == 0.0 and \
+                    c2[0] == 0.0 and c2[1] == 0.0 and c2[2] == 0.0:
                 continue
-            lines.append([atom[id], atom[type], e1x, e1y, 0.0, e2x, e2y, 0.0])
+            tris.append([atom[id], atom[type]] + c1 + c2 + c3 + n)
 
-        return time, box, None, None, None, lines
+        return time, box, None, None, tris, None
 
     # --------------------------------------------------------------------
-    # wrap line end points associated with atoms thru periodic boundaries
+    # wrap tri corner points associated with atoms thru periodic boundaries
     # invoked by dump() when it does an owrap() on its atoms
 
     def owrap(self, time, xprd, yprd, zprd, idsdump, atomsdump, iother, ix, iy, iz):
         id = self.names["id"]
-        end1x = self.names["end1x"]
-        end1y = self.names["end1y"]
-        end2x = self.names["end2x"]
-        end2y = self.names["end2y"]
+        corner1x = self.names["corner1x"]
+        corner1y = self.names["corner1y"]
+        corner1z = self.names["corner1z"]
+        corner2x = self.names["corner2x"]
+        corner2y = self.names["corner2y"]
+        corner2z = self.names["corner2z"]
+        corner3x = self.names["corner3x"]
+        corner3y = self.names["corner3y"]
+        corner3z = self.names["corner3z"]
 
         isnap = self.findtime(time)
         snap = self.snaps[isnap]
@@ -348,10 +360,16 @@ class ldump:
             jdump = idsdump[atomsdump[idump][iother]]
             delx = (atomsdump[idump][ix]-atomsdump[jdump][ix])*xprd
             dely = (atomsdump[idump][iy]-atomsdump[jdump][iy])*yprd
-            atoms[i][end1x] += delx
-            atoms[i][end1y] += dely
-            atoms[i][end2x] += delx
-            atoms[i][end2y] += dely
+            delz = (atomsdump[idump][iz]-atomsdump[jdump][iz])*zprd
+            atoms[i][corner1x] += delx
+            atoms[i][corner1y] += dely
+            atoms[i][corner1z] += delz
+            atoms[i][corner2x] += delx
+            atoms[i][corner2y] += dely
+            atoms[i][corner2z] += delz
+            atoms[i][corner3x] += delx
+            atoms[i][corner3y] += dely
+            atoms[i][corner3z] += delz
 
 # --------------------------------------------------------------------
 # one snapshot
@@ -359,3 +377,30 @@ class ldump:
 
 class Snap:
     pass
+
+# --------------------------------------------------------------------
+# compute normal for a triangle with 3 vertices
+
+
+def normal(x, y, z):
+    v1 = 3*[0]
+    v1[0] = y[0] - x[0]
+    v1[1] = y[1] - x[1]
+    v1[2] = y[2] - x[2]
+
+    v2 = 3*[0]
+    v2[0] = z[0] - y[0]
+    v2[1] = z[1] - y[1]
+    v2[2] = z[2] - y[2]
+
+    n = 3*[0]
+    n[0] = v1[1]*v2[2] - v1[2]*v2[1]
+    n[1] = v1[2]*v2[0] - v1[0]*v2[2]
+    n[2] = v1[0]*v2[1] - v1[1]*v2[0]
+
+    length = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2])
+    n[0] /= length
+    n[1] /= length
+    n[2] /= length
+
+    return n

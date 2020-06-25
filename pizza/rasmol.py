@@ -48,11 +48,11 @@ r.run(N,"new.rasmol","old.rasmol")    type quit to save RasMol script file
 
 
 try:
-    from DEFAULTS import PIZZA_RASMOL
+    from .DEFAULTS import PIZZA_RASMOL
 except:
     PIZZA_RASMOL = "rasmol"
 try:
-    from DEFAULTS import PIZZA_DISPLAY
+    from .DEFAULTS import PIZZA_DISPLAY
 except:
     PIZZA_DISPLAY = "display"
 

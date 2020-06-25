@@ -13,7 +13,7 @@ import re
 import subprocess
 import os
 import sys
-from vizinfo import vizinfo
+from .vizinfo import vizinfo
 oneline = "3d visualization via Raster3d program"
 
 docstr = """
@@ -84,7 +84,7 @@ r.ldef()  			   default = 0 fill
   by default 100 types are assigned
   if atom/bond/tri/line has type > # defined properties, is an error
   
-from vizinfo import colors         access color list
+from .vizinfo import colors        access color list
 print colors                       list defined color names and RGB values
 colors["nickname"] = [R,G,B]       set new RGB values from 0 to 255
 
@@ -118,15 +118,15 @@ colors["nickname"] = [R,G,B]       set new RGB values from 0 to 255
 
 
 try:
-    from DEFAULTS import PIZZA_RENDER
+    from .DEFAULTS import PIZZA_RENDER
 except:
     PIZZA_RENDER = "render"
 try:
-    from DEFAULTS import PIZZA_LABEL3D
+    from .DEFAULTS import PIZZA_LABEL3D
 except:
     PIZZA_LABEL3D = "label3d"
 try:
-    from DEFAULTS import PIZZA_DISPLAY
+    from .DEFAULTS import PIZZA_DISPLAY
 except:
     PIZZA_DISPLAY = "display"
 
@@ -165,7 +165,7 @@ class raster:
     # --------------------------------------------------------------------
 
     def bg(self, color):
-        from vizinfo import colors
+        from .vizinfo import colors
         self.bgcol = [colors[color][0]/255.0, colors[color][1]/255.0,
                       colors[color][2]/255.0]
 
@@ -200,7 +200,7 @@ class raster:
     def box(self, *args):
         self.boxflag = args[0]
         if len(args) > 1:
-            from vizinfo import colors
+            from .vizinfo import colors
             self.bxcol = [colors[args[1]][0]/255.0, colors[args[1]][1]/255.0,
                           colors[args[1]][2]/255.0]
         if len(args) > 2:
@@ -210,7 +210,7 @@ class raster:
     # scale down point-size by 3x
 
     def label(self, x, y, font, point, color, text):
-        from vizinfo import colors
+        from .vizinfo import colors
         scaledcolor = [colors[color][0]/255.0, colors[color][1]/255.0,
                        colors[color][2]/255.0]
         list = [x, y, fontlist[font], point/3.0, "Left", scaledcolor, text]
